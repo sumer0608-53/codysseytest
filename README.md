@@ -41,9 +41,22 @@
     └── vscode.png
 ~~~
 
+디렉터리별 역할
+
+- `app/`은 커스텀 이미지에 복사하는 NGINX 정적 페이지를 담는다.
+- `bind-demo/`는 호스트에서 수정해 컨테이너 반영을 확인한 파일을 담는다.
+- `evidence/`는 실제 명령과 출력, 브라우저와 VS Code 캡처를 담는다.
+
 ## 실행 증거
 
-**브라우저 접속** · 같은 Dockerfile로 서버를 다시 실행해 8080 포트와 응답을 한 화면에 담았다.
+**포트 매핑** · 본 실습에서 다음 `curl` 명령으로 18080 포트의 페이지를 확인했다. 아래 브라우저 캡처는 같은 Dockerfile을 8080 포트로 다시 실행한 결과다. 두 증거에서 같은 `WORKSTATION_IMAGE_OK` 응답을 확인할 수 있다. [curl 명령과 전체 HTML 응답](evidence/terminal.txt#L219-L231)
+
+~~~text
+$ curl -fsS --max-time 5 http://127.0.0.1:18080/
+…
+  <p>WORKSTATION_IMAGE_OK</p>
+…
+~~~
 
 ![브라우저 주소창의 127.0.0.1:8080과 NGINX 응답](evidence/browser.jpg)
 
@@ -58,6 +71,15 @@ $ docker run --rm --name workstation-1795233686-4440-25170-hello hello-world
 
 Hello from Docker!
 This message shows that your installation appears to be working correctly.
+~~~
+
+**실행 및 종료 컨테이너 목록 (`docker ps -a`)** · `-a`로 실행 중인 컨테이너와 종료된 컨테이너를 함께 조회했다. 이름 필터로 이 실습에서 만든 컨테이너만 표시했다. 아래는 실제 출력에서 헤더와 대표 행을 발췌한 것이다. [명령과 전체 실습 목록](evidence/terminal.txt#L363-L370)
+
+~~~text
+$ docker ps -a --filter name=workstation-1795233686-4440-25170
+CONTAINER ID   IMAGE                                   COMMAND                  CREATED          STATUS                                PORTS                     NAMES
+e6ceac5a6399   workstation-1795233686-4440-25170:1.0   "/docker-entrypoint.…"   8 seconds ago    Exited (0) 6 seconds ago                                        workstation-1795233686-4440-25170-web-two
+34563731dab8   workstation-1795233686-4440-25170:1.0   "/docker-entrypoint.…"   8 seconds ago    Up 7 seconds                          127.0.0.1:18080->80/tcp   workstation-1795233686-4440-25170-web-one
 ~~~
 
 **GitHub 원격 연결 및 푸시** · 아래는 초기 원격 연결에 사용한 명령과 첫 푸시의 실제 출력 발췌다. [GitHub 푸시 커밋](https://github.com/sumer0608-53/codysseytest/commit/b9b1e1e)
@@ -81,6 +103,8 @@ Docker의 Linux 엔진을 시작하고 이 저장소의 루트에서 실행한�
 ~~~bash
 PORT_ONE=18080 PORT_TWO=18081 bash workstation-mission.sh
 ~~~
+
+Docker Desktop의 WSL2 통합을 사용하면 Ubuntu에서 실행하고 Windows 브라우저에서 `http://127.0.0.1:18080/`으로 확인할 수 있다. Ubuntu의 `curl`만 성공하면 Windows 호스트에서 포트가 열리는지와 방화벽·VPN 정책을 확인한다. macOS의 Docker Desktop이나 OrbStack에서는 macOS 브라우저에서 같은 주소를 사용한다. 포트 번호를 바꾸면 브라우저와 `curl`의 주소에도 같은 번호를 사용한다.
 
 웹 서버만 확인할 때는 다음 명령을 사용한다.
 
@@ -112,6 +136,7 @@ Docker는 변경이 없는 빌드 레이어를 재사용한다. 캐시 없이 �
 - 파일은 `644 = (4+2, 4, 4) = rw-r--r--`로 설정했다. 소유자가 정적 파일을 편집하고 그룹과 기타 사용자는 읽을 수 있도록 했다. HTML 파일은 실행 권한이 필요 없다.
 - 디렉터리는 `755 = (4+2+1, 4+1, 4+1) = rwxr-xr-x`로 설정했다. 소유자가 항목을 관리하고 다른 사용자는 목록을 읽고 내부 경로에 접근할 수 있도록 했다.
 - 바인드 마운트 대상은 NGINX가 정적 파일을 읽는 절대 경로 `/usr/share/nginx/html`이다. 컨테이너의 작업 디렉터리와 관계없이 같은 위치에 연결된다. 볼륨은 실습 데이터를 따로 관리할 수 있도록 `/data`에 마운트했다.
+- 호스트 원본을 상대 경로로 지정하면 실행 위치에 따라 다른 폴더를 가리킬 수 있으므로, 저장소 루트에서 `"$PWD/bind-demo"`처럼 호스트 절대 경로로 전달한다.
 - `app/index.html`을 수정하고 같은 태그로 이미지를 다시 빌드해도 기존 컨테이너는 생성 시 사용한 이미지의 페이지를 계속 제공한다. 새 페이지를 제공하려면 새 이미지로 컨테이너를 다시 생성한다. 바인드 마운트한 파일은 호스트에서 수정하면 실행 중인 컨테이너에 반영된다.
 
 ### 네트워크 네임스페이스와 포트포워딩
@@ -119,6 +144,16 @@ Docker는 변경이 없는 빌드 레이어를 재사용한다. 캐시 없이 �
 Docker 기본 브리지 네트워크에서 컨테이너는 별개의 네트워크 네임스페이스를 사용해 인터페이스, IP 주소, 라우팅과 포트 공간을 격리한다. 따라서 두 NGINX 컨테이너는 각자 자신의 80번 포트에서 동시에 대기할 수 있다. `-p 127.0.0.1:18080:80`은 호스트의 루프백 주소 18080으로 들어온 연결을 Docker의 포트포워딩을 통해 해당 컨테이너의 80번으로 전달한다. 두 번째 컨테이너는 호스트 18081로 매핑한다. 충돌 여부는 호스트 쪽 주소와 포트를 기준으로 판단한다. [Docker 포트 공개 문서](https://docs.docker.com/engine/network/port-publishing/)
 
 ### 볼륨 상태와 백업
+
+원본 실습에서 아래 이름의 볼륨을 만들고 두 컨테이너의 `/data`에 차례대로 연결했다. 첫 컨테이너 삭제 후 두 번째 컨테이너에서 같은 파일을 읽었다. [볼륨 생성·마운트·삭제·읽기 전체 로그](evidence/terminal.txt#L339-L357)
+
+~~~bash
+$ docker volume create workstation-1795233686-4440-25170-data
+workstation-1795233686-4440-25170-data
+$ docker exec workstation-1795233686-4440-25170-volume-second sh -ec 'test ! -e /tmp/proof.txt; echo /tmp/proof.txt: absent; cat /data/proof.txt'
+/tmp/proof.txt: absent
+VOLUME_OK
+~~~
 
 `docker volume ls`로 이름과 드라이버를 조회하고 `docker volume inspect <볼륨명>`으로 상세 상태를 확인한다. 보완 실습에서는 새 볼륨의 드라이버와 범위가 모두 `local`임을 확인했다. [실제 볼륨 상태 로그](evidence/docker-diagnostics.txt)
 
@@ -134,13 +169,15 @@ docker run --rm --mount type=volume,source=mydata-restored,target=/data \
   --mount "type=bind,source=$PWD,target=/backup,readonly" ubuntu:24.04 \
   tar -xzf /backup/mydata.tar.gz -C /data
 ~~~
+
+실습 데이터는 변경 작업 전에 수동 백업한다. 매일 변경되는 운영 데이터라면 하루 한 번 스크립트로 백업하고 정기적으로 새 볼륨에 복원해 확인한다.
 ## 트러블슈팅 재현
 
 | 문제 | 원인 가설 | 확인 | 해결 | 증거와 검색어 |
 | --- | --- | --- | --- | --- |
-| 웹 요청이 404를 반환 | 요청한 파일이 웹 이미지에 없음 | `curl`로 `/missing.html`의 404 응답을 기록 | `/`로 요청하여 정적 페이지 응답 확인 | [터미널 로그](evidence/terminal.txt) · `missing.html` |
-| 컨테이너 교체 후 파일을 찾을 수 없음 | `/tmp` 파일을 컨테이너의 쓰기 계층에 저장 | 새 컨테이너의 `/tmp/proof.txt` 부재 확인 | 이름 있는 볼륨을 `/data`에 재연결해 `proof.txt` 읽기 | [터미널 로그](evidence/terminal.txt) · `/tmp/proof.txt: absent`, `VOLUME_OK` |
-| 호스트 포트를 게시할 수 없음 | 실행 중인 컨테이너가 같은 주소와 포트를 사용 | `docker ps`의 포트 매핑과 두 번째 실행 오류 확인 | 실습 컨테이너를 중지한 뒤 같은 포트로 다시 실행 | [Docker 진단 로그](evidence/docker-diagnostics.txt) · `18087`, `port is already allocated` |
+| 웹 요청이 404를 반환 | 요청한 파일이 웹 이미지에 없음 | `curl`로 `/missing.html`의 404 응답을 기록 | `/`로 요청하여 정적 페이지 응답 확인 | [404와 정상 응답](evidence/terminal.txt#L292-L306) |
+| 컨테이너 교체 후 파일을 찾을 수 없음 | `/tmp` 파일을 컨테이너의 쓰기 계층에 저장 | 새 컨테이너의 `/tmp/proof.txt` 부재 확인 | 이름 있는 볼륨을 `/data`에 재연결해 `proof.txt` 읽기 | [컨테이너 교체와 볼륨 검증](evidence/terminal.txt#L339-L357) |
+| 호스트 포트를 게시할 수 없음 | 실행 중인 컨테이너가 같은 주소와 포트를 사용 | `docker ps`의 포트 매핑과 두 번째 실행 오류 확인 | 실습 컨테이너를 중지한 뒤 같은 포트로 다시 실행 | [포트 충돌과 해제](evidence/docker-diagnostics.txt#L10-L31) |
 
 ### Docker 데몬 연결 점검
 
@@ -156,3 +193,5 @@ docker run --rm --mount type=volume,source=mydata-restored,target=/data \
 1. `docker ps --format '{{.Names}} {{.Ports}}'`로 해당 호스트 포트를 게시하는 컨테이너를 찾는다. WSL에서 매핑이 보이지 않으면 Windows PowerShell에서 `Get-NetTCPConnection -State Listen -LocalPort 18087`로 소유 PID를 확인한다. Linux 호스트에서는 `ss -ltnp 'sport = :18087'`로 리스너를 확인한다.
 2. 소유자가 중지해도 되는 실습 컨테이너이면 `docker stop <이름>`으로 중지한 뒤 매핑을 다시 확인한다. 다른 서비스가 사용 중이면 `PORT_ONE=18088 PORT_TWO=18089 bash workstation-mission.sh`처럼 비어 있는 호스트 포트로 바꾼다.
 3. 같은 포트로 다시 실행하고 `curl -fsS http://127.0.0.1:<포트>/`로 웹 응답을 확인한다. 이번 재현에서는 18087의 점유 컨테이너를 중지하고 같은 포트에서 새 컨테이너가 시작되는 것을 확인했다. [Docker 진단 로그](evidence/docker-diagnostics.txt)
+
+Linux에서 `ss` 출력에 PID가 보이지 않으면 관리자 권한이 있는 경우 `sudo ss -ltnp 'sport = :18087'`로 다시 확인하고, 표시된 PID는 `ps -p <PID> -o pid,user,comm`으로 식별한다.
