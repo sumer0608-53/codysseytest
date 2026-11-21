@@ -1,0 +1,4 @@
+$ docker version --format 'Client={{.Client.Version}} Server={{.Server.Version}} ServerAPI={{.Server.APIVersion}}'
+Client=29.9.2 Server=29.9.2 ServerAPI=1.56
+$ docker info --format 'OS={{.OSType}} Architecture={{.Architecture}} Server={{.ServerVersion}} StorageDriver={{.Driver}} CgroupDriver={{.CgroupDriver}} CgroupVersion={{.CgroupVersion}} ContainersRunning={{.ContainersRunning}}'
+OS=linux Architecture=x86_64 Server=29.9.2 StorageDriver=overlayfs CgroupDriver=cgroupfs CgroupVersion=2 ContainersRunning=0

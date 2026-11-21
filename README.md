@@ -36,6 +36,7 @@
 └── evidence/
     ├── terminal.txt
     ├── docker-diagnostics.txt
+    ├── docker-engine.txt
     ├── browser.jpg
     └── vscode.png
 ~~~
@@ -107,6 +108,7 @@ Docker는 변경이 없는 빌드 레이어를 재사용한다. 캐시 없이 �
 
 ### 권한·경로·이미지 선택
 
+- **권한 변경 의도** · 소유자만 수정할 수 있도록 유지하면서, 다른 사용자에게 파일 읽기와 디렉터리 탐색을 허용하려고 파일은 `600 → 644`, 디렉터리는 `700 → 755`로 바꿨다.
 - 파일은 `644 = (4+2, 4, 4) = rw-r--r--`로 설정했다. 소유자가 정적 파일을 편집하고 그룹과 기타 사용자는 읽을 수 있도록 했다. HTML 파일은 실행 권한이 필요 없다.
 - 디렉터리는 `755 = (4+2+1, 4+1, 4+1) = rwxr-xr-x`로 설정했다. 소유자가 항목을 관리하고 다른 사용자는 목록을 읽고 내부 경로에 접근할 수 있도록 했다.
 - 바인드 마운트 대상은 NGINX가 정적 파일을 읽는 절대 경로 `/usr/share/nginx/html`이다. 컨테이너의 작업 디렉터리와 관계없이 같은 위치에 연결된다. 볼륨은 실습 데이터를 따로 관리할 수 있도록 `/data`에 마운트했다.
@@ -141,6 +143,8 @@ docker run --rm --mount type=volume,source=mydata-restored,target=/data \
 | 호스트 포트를 게시할 수 없음 | 실행 중인 컨테이너가 같은 주소와 포트를 사용 | `docker ps`의 포트 매핑과 두 번째 실행 오류 확인 | 실습 컨테이너를 중지한 뒤 같은 포트로 다시 실행 | [Docker 진단 로그](evidence/docker-diagnostics.txt) · `18087`, `port is already allocated` |
 
 ### Docker 데몬 연결 점검
+
+이 실습은 Ubuntu WSL2에서 Docker Desktop 엔진에 연결했다. `docker version`의 서버 버전과 API, `docker info`의 스토리지 드라이버와 cgroup 상태를 확인했다. [실제 Docker 엔진 상태 출력](evidence/docker-engine.txt)
 
 - [ ] `docker --version`으로 CLI 설치를 확인하고 `docker info`로 서버 연결을 검사한다.
 - [ ] `docker context show`와 `docker context ls`로 현재 컨텍스트가 사용하려는 엔진을 가리키는지 확인한다.
