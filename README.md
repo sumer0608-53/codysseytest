@@ -19,7 +19,7 @@
 - [x] 호스트 파일 변경 반영과 Docker 볼륨 데이터 유지 확인
 - [x] 저장소 범위 Git 사용자 정보와 기본 브랜치 설정
 - [x] [브라우저 주소창과 페이지 캡처](evidence/browser.jpg) (동일 Dockerfile로 재실행한 8080 포트)
-- [ ] VS Code GitHub 로그인 및 연동 캡처 첨부
+- [x] [VS Code GitHub 로그인 및 원격 저장소 연동 캡처](evidence/vscode.png) (계정 메뉴의 사용자명 마스킹)
 - [x] [GitHub 저장소](https://github.com/sumer0608-53/codysseytest) 연결 및 main 브랜치 푸시
 
 [전체 명령과 출력](evidence/terminal.txt)에서 각 검증의 실제 결과를 볼 수 있다. 로그의 `<MISSION_DIR>`와 `<TEMP_DIR>`는 실행 환경의 경로를 가린 표시다.
